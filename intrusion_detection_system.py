@@ -1,4 +1,4 @@
-from scapy.all import sniff, IP, TCP
+from scapy.all import sniff, IP, TCP, time
 from collections import defaultdict
 import threading
 import queue
@@ -248,5 +248,6 @@ def testIDS():
         
     print('\n IDS test completed.')
 
-if __name__ == '__main__':
-    testIDS()
+if __name__ == "__main__":
+    ids = IntrusionDetectionSystem()
+    ids.start()
