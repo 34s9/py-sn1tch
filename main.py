@@ -27,7 +27,7 @@ try:
     successfulModules.append('psutil')
     import sys
     successfulModules.append('sys')
-    import ids
+    #import ids
     successfulModules.append('ids')
     print('All modules imported correctly.')
 except:
@@ -83,4 +83,4 @@ if __name__ == '__main__':
         except:
             exit()
     DSR = DetermineSystemRequirements()
-    IDS = ids.IntrusionDetectionSystem()
+    #IDS = ids.IntrusionDetectionSystem()
