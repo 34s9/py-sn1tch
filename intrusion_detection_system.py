@@ -4,6 +4,9 @@ import threading
 import queue
 import numpy
 from sklearn.ensemble import IsolationForest
+import logging
+import json
+from datetime import datetime
 
 # Not designed to be ran by itself, but within main.py.
 # Please ensure you run using sudo and -E. 
@@ -12,6 +15,9 @@ class DataAggregation:
     def __init__(self):
         self.packetQueue = queue.Queue()
         self.stopCapture = threading.Event()
+
+        # Implement PCAP/CSV filing here.
+        # Write packets to file.
 
     def callbackPacket(self, packet):
         if IP in packet and TCP in packet:
@@ -132,6 +138,72 @@ class DetectionEngine:
         
         return threats
 
+class AlertSystem:
+    def __init__(self, logFile = 'idsAlerts.log'):
+        self.logger = logging.getLogger("idsAlerts")
+        self.logger.setLevel(logging.INFO)
+
+        handler = logging.FileHandler(logFile)
+        formatter = logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(message)s'
+        )
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)
+
+    def generateAlert(self, threat, packetInfo):
+        alert = {
+            'timestamp': datetime.now().isoformat,
+            'threatType': threat['type'],
+            'sourceIP': packetInfo.get('sourceIP'),
+            'destinationIP': packetInfo.get('destinationIP'),
+            'confidence': threat.get('confidence', 0.0),
+            'details': threat
+        }
+
+        self.logger.warning(json.dumps(alert))
+
+        if threat['confidence'] > 0.8:
+            self.logger.critical(
+                f'High confidence threat detected: {json.dumps(alert)}'
+            )
+
+            # Implement additional integration here for notification.
+            # E.g Email, Slack, SIEM Here.
+
 class IntrusionDetectionSystem:
-    def __init__(self):
-        pass
+    def __init__(self, interface = 'eth0'):
+        self.DataAggregation = DataAggregation()
+        self.TrafficAnalysis = TrafficAnalysis()
+        self.DetectionEngine = DetectionEngine()
+        self.AlertSystem = AlertSystem()
+
+        self.interface = interface
+    
+    def start(self):
+        print(f'Starting IDS on interface {self.interface}')
+        self.DataAggregation.beginCapture(self.interface)
+
+        while True:
+            try:
+                packet = self.DataAggregation.packetQueue.get(timeout = 1)
+                features = self.TrafficAnalysis.analyzePacket(packet)
+
+                if features:
+                    threats = self.DetectionEngine.detectThreats(features)
+
+                    for threat in threats:
+                        packetInfo = {
+                            'sourceIP': packet[IP].src,
+                            'destinationIP': packet[IP].dst,
+                            'sourcePort': packet[TCP].sport,
+                            'destinationPort': packet[TCP].dport
+                        }
+                        
+                        self.AlertSystem.generateAlert(threat, packetInfo)
+                    
+            except queue.Empty:
+                continue
+            except KeyboardInterrupt:
+                print('Stopping IDS...')
+                self.DataAggregation.stopCapture()
+                break
