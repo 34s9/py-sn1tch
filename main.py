@@ -1,3 +1,16 @@
+'Key'
+"""
+Current Date: 23/06/2025
+Version: 0.0.4
+"""
+
+'Dependency Checking'
+"""
+I used try and except statements as when a python module is not installed it returns an error. This will therefore catch the error allowing for the program to continue running.
+The 'moduleError' variable is a boolean as it is the best way to show whether an error has occured, as it only uses True or False therefore being efficient. This is seen as a 'flag', where being True means a module is not installed. And False being all modules are properly installed.
+The 'importedModules' array contains a list of all modules that are required for the program to launch in this file. I used a array as it is the best way to store a list of strings, and because of its simple and easy indexing. Therefore allowing me to easily index 
+"""
+
 try:
     moduleError = False
     importedModules = ['os', 'psutil', 'sys', 'ids']
@@ -59,6 +72,9 @@ class DetermineSystemRequirements:
 if __name__ == '__main__':
     if moduleError == True:
         print('[!] Exiting program...')
-        sys.exit()
+        try:
+            sys.exit()
+        except:
+            exit()
     DSR = DetermineSystemRequirements()
-    IDS = intrusion_detection_system.DataAggregation()
+    IDS = intrusion_detection_system.IntrusionDetectionSystem()
