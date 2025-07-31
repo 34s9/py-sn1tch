@@ -26,3 +26,52 @@ class DataAggregation:
     def stopCapture(self):
         self.stopCapture.set()
         self.captureThread.join()
+
+
+class TrafficAnalysis:
+    def __init__(self):
+        self.connections = defaultdict(list)
+        self.flowStats = defaultdict(lambda: {
+
+            'packetCount' : 0,
+            'byteCount' : 0,
+            'startTime' : None,
+            'lastTime' : None
+
+        })
+    
+    def analyzePacket(self, packet):
+        if IP in packet and TCP in packet:
+
+            src = packet[IP].src
+            dst = packet[IP].dst
+            spt = packet[TCP].sport
+            dpt = packet[TCP].dport
+
+            flowKey = (src, dst, spt, dpt)
+
+            stats = self.flowStats[flowKey]
+            stats['packetCount'] += 1
+            stats['byteCount'] += len(packet)
+            currentTime = packet.time
+
+            if not stats['startTime']:
+                stats['startTime'] = currentTime
+            
+            stats['lastTime'] = currentTime
+
+            return self.extractFeatures(packet, stats)
+    
+    def extractFeatures(self, packet, stats):
+        return {
+            'packetSize' : len(packet),
+            'flowDuration' : stats['lastTime'] - stats['startTime'],
+            'packetRate' : stats['packetCount'] / (stats['lastTime'] - stats['startTime']),
+            'byteRate' : stats['byteCount'] / (stats['lastTime'] - stats['startTime']),
+            'tcpFlags' : packet[TCP].flags,
+            'windowSize' : packet[TCP].window
+        }
+
+class IntrusionDetectionSystem:
+    def __init__(self):
+        pass
