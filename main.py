@@ -1,4 +1,19 @@
-import os, psutil
+try:
+    moduleError = False
+    importedModules = ['os', 'psutil', 'sys', 's']
+    successfulModules = []
+    import os
+    successfulModules.append('os')
+    import psutil
+    successfulModules.append('psutil')
+    import sys
+    successfulModules.append('sys')
+    print('All modules imported correctly.')
+except:
+    for module in importedModules:
+        if module not in successfulModules:
+            print('[!] Module "' + module + '" is not installed on the device.')
+            moduleError = True
 
 class DetermineSystemRequirements:
 
@@ -12,7 +27,7 @@ class DetermineSystemRequirements:
         operatingSystem = os.name
         
         if operatingSystem == 'nt': # Detected Windows Operating System
-            return 'Detected Windows operating system, running' + currentVersion + ' of SIEM solution.'
+            return 'Detected Windows operating system, running ' + currentVersion + ' of SIEM solution.'
         elif operatingSystem == 'posix': # Detected Linux Operating System
             return 'Detected Linux operating system, running ' + currentVersion + ' of SIEM solution.'
         else:
@@ -30,8 +45,14 @@ class DetermineSystemRequirements:
             return 'Detected ' + str(cpuCount) + ' CPU cores and ' + str(totalMemory) + ' GB of RAM.'
     
     def determineStorage(self):
-        disk = psutil.disk_usage('/')
-        print(disk.total / (1024.0 ** 3))
+        disk = round(psutil.disk_usage('/').total / (1024.0 ** 3))
+        if disk < 256:
+            return '[!] Detected hard disk size of ' + str(disk) + ' GB, lower than minimum specs. Errors may occur.'
+        else:
+            return 'Detected ' + str(disk) + ' GB in hard disk.'
 
 if __name__ == '__main__':
+    if moduleError == True:
+        print('[!] Exiting program...')
+        sys.exit()
     DSR = DetermineSystemRequirements()
