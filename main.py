@@ -1,6 +1,6 @@
 try:
     moduleError = False
-    importedModules = ['os', 'psutil', 'sys', 's']
+    importedModules = ['os', 'psutil', 'sys', 'ids']
     successfulModules = []
     import os
     successfulModules.append('os')
@@ -8,10 +8,15 @@ try:
     successfulModules.append('psutil')
     import sys
     successfulModules.append('sys')
+    import intrusion_detection_system
+    successfulModules.append('ids')
     print('All modules imported correctly.')
 except:
     for module in importedModules:
-        if module not in successfulModules:
+        if module == 'ids':
+            print('[!] Module "' + module + '" is missing required dependencies to be installed, or requires root/sudo permissions.')
+            moduleError = True
+        elif module not in successfulModules:
             print('[!] Module "' + module + '" is not installed on the device.')
             moduleError = True
 
@@ -56,3 +61,4 @@ if __name__ == '__main__':
         print('[!] Exiting program...')
         sys.exit()
     DSR = DetermineSystemRequirements()
+    IDS = intrusion_detection_system.DataAggregation()
