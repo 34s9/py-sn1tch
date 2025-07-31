@@ -2,6 +2,8 @@ from scapy.all import sniff, IP, TCP
 from collections import defaultdict
 import threading
 import queue
+import numpy
+from sklearn.ensemble import IsolationForest
 
 # Not designed to be ran by itself, but within main.py.
 # Please ensure you run using sudo and -E. 
@@ -71,6 +73,64 @@ class TrafficAnalysis:
             'tcpFlags' : packet[TCP].flags,
             'windowSize' : packet[TCP].window
         }
+
+class DetectionEngine:
+    def __init__(self):
+        self.anomalyDetector = IsolationForest(
+            contamination = 0.1,
+            random_state = 42
+        )
+
+        self.signatureRules = self.loadSignatureRules()
+        self.trainingData = []
+
+    def loadSignatureRules(self):
+        return {
+            'synFlood': {
+                'condition': lambda features: (
+                    features['tcpFlags'] == 2 and
+                    features['packetRate'] > 100
+                )
+            },
+            'portScan': {
+                'condition': lambda features: (
+                    features['packetSize'] < 100 and
+                    features['packetRate'] > 50
+                )
+            }
+        }
+    
+    def trainAnomalyDetector(self, normalTrafficData):
+        self.anomalyDetector.fit(normalTrafficData)
+    
+    def detectThreats(self, features):
+        threats = []
+
+        'Signature Based Detection'
+        for ruleName, rule in self.signatureRules.items():
+            if rule['condition'](features):
+                threats.append({
+                    'type': 'signature',
+                    'rule': ruleName,
+                    'confidence': 1.0
+                })
+        
+        'Anomaly Based Detection'
+        featureVector = numpy.array([[
+            features['packetSize'],
+            features['packetRate'],
+            features['byteRate']
+        ]])
+
+        anomalyScore = self.anomalyDetector.score_samples(featureVector)[0]
+        if anomalyScore < -0.5:
+            threats.append({
+                'type': 'anomaly',
+                'score': anomalyScore,
+                'confidence': min(1.0, abs(anomalyScore))
+            })
+        
+        return threats
 
 class IntrusionDetectionSystem:
     def __init__(self):
