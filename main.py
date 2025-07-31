@@ -1,14 +1,26 @@
 'Key'
 """
-Current Date: 23/06/2025
-Version: 0.0.4
+Current Date: 25/06/2025
+Version: 0.0.5
 """
 
-'Dependency Checking'
-"""
+""" 'Dependency Checking Documentation'
 I used try and except statements as when a python module is not installed it returns an error. This will therefore catch the error allowing for the program to continue running.
 The 'moduleError' variable is a boolean as it is the best way to show whether an error has occured, as it only uses True or False therefore being efficient. This is seen as a 'flag', where being True means a module is not installed. And False being all modules are properly installed.
-The 'importedModules' array contains a list of all modules that are required for the program to launch in this file. I used a array as it is the best way to store a list of strings, and because of its simple and easy indexing. Therefore allowing me to easily index 
+The 'importedModules' array contains a list of all modules that are required for the program to launch in this file. I used a array as it is the best way to store a list of strings, and because of its simple and easy indexing. Therefore allowing me to easily index all possible names of modules.
+The 'successfulModules' array contains a list of all modules that have been successfully imported into the program. I used an array as it is the best way to store a list of strings, and because of its simple and easy indexing. Therefore allowing me to easily index all possible names of modules.
+Each 'import' statement imports a required dependency for the program to work. I decided to use import as it is the most efficient way to import methods from other files.
+After each import I append the name of the module into successfulModules. I used append as it is the only way to append strings into a list. I used the module name as a string as it is the only way to store actual characters aside from their unicode.
+I then print All modules imported correctly. To alert the user that no problems were encountered during dependency checking.
+
+If a module is ever throwing an error when importing, the module was not installed on the device.
+We then check every module that was supposed to be imported. Using a for loop as it is the easiest way to iterate across a array.
+If the module is the intrusion_detection_system module...
+We alert the user that the IDS file is missing required dependencies, or alternatively requires root/sudo permission (if on linux).
+We then make 'moduleError' equal to True. So the program will not start.
+If the module is not installed...
+We alert the user that the module is not installed on the device.
+And then make 'moduleError' equal to True to stop the program from running.
 """
 
 try:
