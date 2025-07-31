@@ -10,7 +10,7 @@ I then print All modules imported correctly. To alert the user that no problems 
 If a module is ever throwing an error when importing, the module was not installed on the device.
 We then check every module that was supposed to be imported. Using a for loop as it is the easiest way to iterate across a array.
 If the module is the intrusion_detection_system module...
-We alert the user that the IDS file is missing required dependencies, or alternatively requires root/sudo permission (if on linux).
+We alert the user that the UPDATE HERE file is missing required dependencies, or alternatively requires root/sudo permission (if on linux).
 We then make 'moduleError' equal to True. So the program will not start.
 If the module is not installed...
 We alert the user that the module is not installed on the device.
@@ -19,7 +19,7 @@ And then make 'moduleError' equal to True to stop the program from running.
 
 try:
     moduleError = False
-    importedModules = ['os', 'psutil', 'sys', 'ids']
+    importedModules = ['os', 'psutil', 'sys', 'analysisEngine', 'scapy']
     successfulModules = []
     import os
     successfulModules.append('os')
@@ -27,12 +27,14 @@ try:
     successfulModules.append('psutil')
     import sys
     successfulModules.append('sys')
-    #import ids
-    successfulModules.append('ids')
+    import packetAnalysis
+    successfulModules.append('analysisEngine')
+    from scapy.all import sniff, wrpcap
+    successfulModules.append('scapy')
     print('All modules imported correctly.')
 except:
     for module in importedModules:
-        if module == 'ids':
+        if module == 'dataAgg':
             print('[!] Module "' + module + '" is missing required dependencies to be installed, or requires root/sudo permissions.')
             moduleError = True
         elif module not in successfulModules:
@@ -75,6 +77,31 @@ class DetermineSystemRequirements:
         else:
             return 'Detected ' + str(disk) + ' GB in hard disk.'
 
+class dataAggregation:
+    def __init__(self, resetCount):
+        self.resetCount = resetCount
+        self.amountPassed = 0
+        self.fileCount = 1
+        self.packets = []
+
+    def packetCallback(self, packet):
+        self.packets.append(packet)
+
+    def sniffPacket(self):
+        sniff(prn = self.packetCallback, count = self.resetCount)
+        self.amountPassed += self.resetCount
+    
+    def writePCAP(self):
+        wrpcap('logsPCAP/' + str(self.fileCount) + '.pcap', self.packets)
+
+    def loopIterated(self):
+        self.fileCount += 1
+
+    def resetLogs(self):
+        pass
+        # Insert code to delete logsPCAP files here.
+
+
 if __name__ == '__main__':
     if moduleError == True:
         print('[!] Exiting program...')
@@ -83,4 +110,26 @@ if __name__ == '__main__':
         except:
             exit()
     DSR = DetermineSystemRequirements()
-    #IDS = ids.IntrusionDetectionSystem()
+    DA = dataAggregation(resetCount=120)
+
+    'Example of possible packet loop.'
+
+    while True:
+        try:
+            # Insert threading here.
+
+            DA.sniffPacket()
+            DA.writePCAP()
+            DA.loopIterated()
+
+            # Insert code to update tkinter display...
+
+        except KeyboardInterrupt:
+            print('Stopping dataAggregation...')
+            break
+        except PermissionError:
+            print('Please run the program using sudo and python -E flag.')
+            break
+        except:
+            print('Error has occurred')
+            break
