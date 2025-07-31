@@ -23,7 +23,7 @@ class DataAggregation:
         if IP in packet and TCP in packet:
             self.packetQueue.put(packet)
 
-    def beginCapture(self, interface = 'eth0'):
+    def beginCapture(self, interface = 'wlan0'):
         
         def captureThread():
             sniff(iface = interface, prn = self.callbackPacket, store = 0, stop_filter = lambda _: self.stopCapture.is_set())
@@ -171,7 +171,7 @@ class AlertSystem:
             # E.g Email, Slack, SIEM Here.
 
 class IntrusionDetectionSystem:
-    def __init__(self, interface = 'eth0'):
+    def __init__(self, interface = 'wlan0'):
         self.DataAggregation = DataAggregation()
         self.TrafficAnalysis = TrafficAnalysis()
         self.DetectionEngine = DetectionEngine()
@@ -207,3 +207,46 @@ class IntrusionDetectionSystem:
                 print('Stopping IDS...')
                 self.DataAggregation.stopCapture()
                 break
+
+def testIDS():
+    # Creating test packets to simulate scenarios
+    testPackets = [
+        # Normal Traffic
+        IP(src = '192.168.1.1', dst = '192.168.1.2') / TCP(sport = 1234, dport = 80, flags = 'A'),
+        IP(src = '192.168.1.3', dst = '192.168.1.4') / TCP(sport = 1235, dport = 443, flags = 'P'),
+
+        # SYN Flood
+        IP(src = '10.0.0.1', dst = '192.168.1.2') / TCP(sport = 5678, dport = 80, flags = 'S'),
+        IP(src = '10.0.0.2', dst = '192.168.1.2') / TCP(sport = 5679, dport = 80, flags = 'S'),
+        IP(src = '10.0.0.3', dst = '192.168.1.2') / TCP(sport = 5680, dport = 80, flags = 'S'),
+
+        # Port Scan
+        IP(src = '192.168.1.100', dst = '192.168.1.2') / TCP(sport = 4321, dport = 22, flags = 'S'),
+        IP(src = '192.168.1.100', dst = '192.168.1.2') / TCP(sport = 4321, dport = 23, flags = 'S'),
+        IP(src = '192.168.1.100', dst = '192.168.1.2') / TCP(sport = 4321, dport = 25, flags = 'S')
+    ]
+
+    IDS = IntrusionDetectionSystem()
+    IDS.start()
+
+    # Simulating packet processing and threat detection
+    print('Starting IDS Test...')
+    for i, packet in enumerate(testPackets, 1):
+        print(f'\nProcessing packet {i}: {packet.summary()}')
+        
+        # Analyze packet features
+        features = IDS.TrafficAnalysis.analyzePacket(packet)
+
+        if features:
+            # Detect threats based on features
+            threats = IDS.DetectionEngine.detectThreats(features)
+
+            if threats:
+                print(f'Detected Threats: {threats}')
+            else:
+                print('No Threats detected.')
+        
+    print('\n IDS test completed.')
+
+if __name__ == '__main__':
+    testIDS()

@@ -1,9 +1,3 @@
-'Key'
-"""
-Current Date: 25/06/2025
-Version: 0.0.5
-"""
-
 """ 'Dependency Checking Documentation'
 I used try and except statements as when a python module is not installed it returns an error. This will therefore catch the error allowing for the program to continue running.
 The 'moduleError' variable is a boolean as it is the best way to show whether an error has occured, as it only uses True or False therefore being efficient. This is seen as a 'flag', where being True means a module is not installed. And False being all modules are properly installed.
