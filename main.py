@@ -19,7 +19,7 @@ And then make 'moduleError' equal to True to stop the program from running.
 
 try:
     moduleError = False
-    importedModules = ['os', 'psutil', 'sys', 'analysisEngine', 'scapy']
+    importedModules = ['os', 'psutil', 'sys', 'scapy']
     successfulModules = []
     import os
     successfulModules.append('os')
@@ -27,8 +27,6 @@ try:
     successfulModules.append('psutil')
     import sys
     successfulModules.append('sys')
-    import packetAnalysis
-    successfulModules.append('analysisEngine')
     from scapy.all import sniff, wrpcap
     successfulModules.append('scapy')
     print('All modules imported correctly.')
@@ -112,24 +110,27 @@ if __name__ == '__main__':
     DSR = DetermineSystemRequirements()
     DA = dataAggregation(resetCount=120)
 
+    'Using OS.system to run terminal command to analyze file.'
+    os.system("python packetAnalysis.py --pcap-file 'PUT PATH HERE'")
+
     'Example of possible packet loop.'
 
-    while True:
-        try:
-            # Insert threading here.
+    # while True:
+    #     try:
+    #         # Insert threading here.
 
-            DA.sniffPacket()
-            DA.writePCAP()
-            DA.loopIterated()
+    #         DA.sniffPacket()
+    #         DA.writePCAP()
+    #         DA.loopIterated()
 
-            # Insert code to update tkinter display...
+    #         # Insert code to update tkinter display...
 
-        except KeyboardInterrupt:
-            print('Stopping dataAggregation...')
-            break
-        except PermissionError:
-            print('Please run the program using sudo and python -E flag.')
-            break
-        except:
-            print('Error has occurred')
-            break
+    #     except KeyboardInterrupt:
+    #         print('Stopping dataAggregation...')
+    #         break
+    #     except PermissionError:
+    #         print('Please run the program using sudo and python -E flag.')
+    #         break
+    #     except:
+    #         print('Error has occurred')
+    #         break
