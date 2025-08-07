@@ -19,7 +19,7 @@ And then make 'moduleError' equal to True to stop the program from running.
 
 try:
     moduleError = False
-    importedModules = ['os', 'psutil', 'sys', 'scapy']
+    importedModules = ['os', 'psutil', 'sys', 'scapy', 'tkinter']
     successfulModules = []
     import os
     successfulModules.append('os')
@@ -29,6 +29,9 @@ try:
     successfulModules.append('sys')
     from scapy.all import sniff, wrpcap
     successfulModules.append('scapy')
+    import tkinter as tk
+    from tkinter import *
+    successfulModules.append('tkinter')
     print('All modules imported correctly.')
 except:
     for module in importedModules:
@@ -75,7 +78,7 @@ class DetermineSystemRequirements:
         else:
             return 'Detected ' + str(disk) + ' GB in hard disk.'
 
-class dataAggregation:
+class DataAggregation:
     def __init__(self, resetCount):
         self.resetCount = resetCount
         self.amountPassed = 0
@@ -99,6 +102,50 @@ class dataAggregation:
         pass
         # Insert code to delete logsPCAP files here.
 
+## FRONT END ##
+
+class PageManager(tk.Tk):
+    def __init__(self, screenName = None, baseName = None, className = "Tk", useTk = True, sync = False, use = None):
+        super().__init__(screenName, baseName, className, useTk, sync, use)
+
+        self.title('py-sn1tch')
+
+        container = tk.Frame(self, height = 400, width = 600)
+        container.pack(side = 'top', fill = 'both', expand = True)
+
+        self.pages = {}
+
+        for p in (MainMenu, LogsPage, AlertsPage, BenchmarkPage, SettingsPage):
+            page = p(container, self)
+
+            self.pages[p] = page
+            page.grid(row = 0, column = 0, sticky = 'nsew')
+        
+        self.raisePage(MainMenu)
+    
+    def raisePage(self, cont):
+        page = self.pages[cont]
+        page.tkraise()
+
+class MainMenu(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+
+class LogsPage(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+
+class AlertsPage(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+
+class BenchmarkPage(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+
+class SettingsPage(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
 
 if __name__ == '__main__':
     if moduleError == True:
@@ -108,10 +155,14 @@ if __name__ == '__main__':
         except:
             exit()
     DSR = DetermineSystemRequirements()
-    DA = dataAggregation(resetCount=120)
+    DA = DataAggregation(resetCount=120)
+
+    'Start Front End'
+    main = PageManager()
+    main.mainloop()
 
     'Using OS.system to run terminal command to analyze file.'
-    os.system("python packetAnalysis.py --pcap-file 'PUT PATH HERE'")
+    #os.system("python packetAnalysis.py --pcap-file path")
 
     'Example of possible packet loop.'
 
