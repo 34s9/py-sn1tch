@@ -19,7 +19,7 @@ And then make 'moduleError' equal to True to stop the program from running.
 
 try:
     moduleError = False
-    importedModules = ['os', 'psutil', 'sys', 'scapy', 'tkinter']
+    importedModules = ['os', 'psutil', 'sys', 'scapy', 'tkinter', 'pillow', 'urllib']
     successfulModules = []
     import os
     successfulModules.append('os')
@@ -31,7 +31,12 @@ try:
     successfulModules.append('scapy')
     import tkinter as tk
     from tkinter import *
+    import tkinter.font
     successfulModules.append('tkinter')
+    from PIL import Image, ImageTk
+    successfulModules.append('pillow')
+    from urllib import request
+    successfulModules.append('urllib')
     print('All modules imported correctly.')
 except:
     for module in importedModules:
@@ -115,7 +120,7 @@ class PageManager(tk.Tk):
 
         self.pages = {}
 
-        for p in (MainMenu, LogsPage, AlertsPage, BenchmarkPage, SettingsPage):
+        for p in (MainMenu, CapturePage, LogsPage, AlertsPage, BenchmarkPage, SettingsPage):
             page = p(container, self)
 
             self.pages[p] = page
@@ -130,6 +135,128 @@ class PageManager(tk.Tk):
 class MainMenu(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
+
+        menuFont = tkinter.font.Font(family = 'Adawaita Sans', size = 16, weight = 'bold')
+        textFont = tkinter.font.Font(family = 'Adawaita Sans', size = 12, weight = 'normal')
+
+        MainMenu.configure(self, background = 'white')
+
+        #tempIcon = PhotoImage(file = 'Textures/placeholder.png')
+        logsButtonTexture = PhotoImage(file = 'Textures/logsButtonTexture.png')
+        alertsButtonTexture = PhotoImage(file = 'Textures/alertsButtonTexture.png')
+        benchmarkButtonTexture = PhotoImage(file = 'Textures/benchmarkButtonTexture.png')
+        settingsButtonTexture = PhotoImage(file = 'Textures/settingsButtonTexture.png')
+        networkOfflineTexture = PhotoImage(file = 'Textures/networkOffline.png')
+        networkOnlineTexture = PhotoImage(file = 'Textures/networkOnline.png')
+
+        self.networkOfflineLabel = tk.Label(self, image = networkOfflineTexture, width = 48, height = 48, background = 'white')
+        self.networkOfflineLabel.image = networkOfflineTexture
+        self.networkOfflineLabel.grid(row = 1, column = 1)
+
+        self.networkOnlineLabel = tk.Label(self, image = networkOnlineTexture, width = 48, height = 48, background = 'white')
+        self.networkOnlineLabel.image = networkOnlineTexture
+        self.networkOnlineLabel.grid(row = 1, column = 1)
+
+        self.networkTextLabel = tk.Label(self, background = 'white', text = 'Network Disabled', font = textFont)
+        self.networkTextLabel.grid(row = 1, column = 2)
+
+        refreshButton = tk.Button(self, text = 'Refresh Network', 
+                                  font = textFont, 
+                                  highlightthickness = 0,
+                                  background = 'white',
+                                  relief = 'raised',
+                                  command = self.refreshNetwork)
+        refreshButton.grid(row = 1, column = 3)
+
+        logsButton = tk.Button(self, image = logsButtonTexture, 
+                               highlightthickness = 0, 
+                               background = 'white', 
+                               width = 200, height = 200, 
+                               relief = 'flat', 
+                               command=lambda: controller.raisePage(CapturePage))
+        
+        logsButton.image = logsButtonTexture
+        logsButton.grid(row = 2, column = 2, padx = 10, pady = 10)
+
+        logsLabel = tk.Label(self, text = 'Logs', font = menuFont, background = 'white')
+        logsLabel.grid(row = 3, column = 2, padx = 10)
+
+        alertsButton = tk.Button(self, image = alertsButtonTexture, 
+                                 highlightthickness = 0, 
+                                 background = 'white', 
+                                 width = 200, height = 200, 
+                                 relief = 'flat', 
+                                 command=lambda: controller.raisePage(AlertsPage))
+        
+        alertsButton.image = alertsButtonTexture
+        alertsButton.grid(row = 2, column = 3, padx = 10, pady = 10)
+
+        alertsLabel = tk.Label(self, text = 'Alerts', font = menuFont, background = 'white')
+        alertsLabel.grid(row = 3, column = 3, padx = 10)
+
+        benchmarkButton = tk.Button(self, image = benchmarkButtonTexture, 
+                                    highlightthickness = 0, 
+                                    background = 'white', 
+                                    width = 200, height = 200, 
+                                    relief = 'flat', 
+                                    command=lambda: controller.raisePage(BenchmarkPage))
+        
+        benchmarkButton.image = benchmarkButtonTexture
+        benchmarkButton.grid(row = 2, column = 4, padx = 10, pady = 10)
+
+        benchmarkLabel = tk.Label(self, text = 'Benchmark Device', font = menuFont, background = 'white')
+        benchmarkLabel.grid(row = 3, column = 4, padx = 10)
+
+        settingsButton = tk.Button(self, image = settingsButtonTexture, 
+                                   highlightthickness = 0, 
+                                   background = 'white', 
+                                   width = 200, height = 200, 
+                                   relief = 'flat', 
+                                   command=lambda: controller.raisePage(SettingsPage))
+        
+        settingsButton.image = settingsButtonTexture
+        settingsButton.grid(row = 2, column = 5, padx = 10, pady = 10)
+
+        settingsLabel = tk.Label(self, text = 'Settings', font = menuFont, background = 'white')
+        settingsLabel.grid(row = 3, column = 5, padx = 10)
+
+        self.refreshNetwork()
+
+    def checkConnection(self):
+        try:
+            request.urlopen('https://8.8.8.8', timeout = 1) # Maps to google DNS lookup.
+            return True
+        except request.URLError as err:
+            return False
+
+    def refreshNetwork(self):
+        self.networkOfflineLabel.grid_forget()
+        self.networkOnlineLabel.grid_forget()
+
+        if self.checkConnection() == True:
+            self.networkOnlineLabel.grid(row = 1, column = 1)
+            self.networkTextLabel.config(text = 'Network Enabled')
+        else:
+            self.networkOfflineLabel.grid(row = 1, column = 1)
+            self.networkTextLabel.config(text = 'Network Disabled')
+
+
+class CapturePage(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+
+        CapturePage.configure(self, background = 'white')
+
+        homeButtonTexture = PhotoImage(file = 'Textures/homeButtonTexture.png')
+
+        homeButton = tk.Button(self, image = homeButtonTexture, 
+                               width = 50, height = 50, 
+                               background = 'white',
+                               relief = 'flat',
+                               highlightthickness = 0,
+                               command = lambda: controller.raisePage(MainMenu))
+        homeButton.image = homeButtonTexture
+        homeButton.grid(row = 1, column = 1)
 
 class LogsPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -162,7 +289,7 @@ if __name__ == '__main__':
     main.mainloop()
 
     'Using OS.system to run terminal command to analyze file.'
-    #os.system("python packetAnalysis.py --pcap-file path")
+    #os.system("python packetAnalysis.py --pcap-file /run/media/matthew/'USB DRIVE'/'~ VCE - Software Development/Folio/DEVELOPMENT'/version_0.0.11/logsPCAP/2.pcap")
 
     'Example of possible packet loop.'
 
