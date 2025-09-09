@@ -1,4 +1,3 @@
-
 """
 HEY! Before you continue, this engine was created by a different developer (Github repo linked below),
 I only made some minor changes to the engine code, and fully wrote out the documentation.
