@@ -22,7 +22,7 @@ This project was created for my year long folio in Australia's VCE Software Deve
 ### 1. Clone & Install
 
 ```
-git clone <your-repo-url>
+git clone https://github.com/34s9/py-sn1tch.git
 cd <your-repo-directory>
 ```
 
