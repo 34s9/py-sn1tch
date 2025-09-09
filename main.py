@@ -22,6 +22,7 @@ try:
     importedModules = ['os', 'psutil', 'sys', 'scapy', 'tkinter', 'pillow', 'urllib']
     successfulModules = []
     import os
+    from os.path import isfile, join
     successfulModules.append('os')
     import psutil
     successfulModules.append('psutil')
@@ -30,6 +31,7 @@ try:
     from scapy.all import sniff, wrpcap
     successfulModules.append('scapy')
     import tkinter as tk
+    from tkinter import filedialog
     from tkinter import *
     import tkinter.font
     successfulModules.append('tkinter')
@@ -87,7 +89,7 @@ class DataAggregation:
     def __init__(self, resetCount):
         self.resetCount = resetCount
         self.amountPassed = 0
-        self.fileCount = 1
+        self.fileCount = None
         self.packets = []
 
     def packetCallback(self, packet):
@@ -106,6 +108,22 @@ class DataAggregation:
     def resetLogs(self):
         pass
         # Insert code to delete logsPCAP files here.
+    
+    def determineFileNumber(self):
+        try:
+            if not os.listdir(directory):
+                return 1
+            else:
+                files = [f for f in os.listdir(directory) if isfile(join(directory, f))]
+                lastFile = files[-1]
+                lastFile = lastFile[0]
+                self.fileCount = int(lastFile) + 1
+        except:
+            print('[!] Ensure there are only py-sn1tch generated files. Or files that follow the pattern of 1.pcap, 2.pcap etc...')
+            try:
+                sys.exit()
+            except:
+                exit()
 
 ## FRONT END ##
 
@@ -145,6 +163,7 @@ class MainMenu(tk.Frame):
         logsButtonTexture = PhotoImage(file = 'Textures/logsButtonTexture.png')
         alertsButtonTexture = PhotoImage(file = 'Textures/alertsButtonTexture.png')
         benchmarkButtonTexture = PhotoImage(file = 'Textures/benchmarkButtonTexture.png')
+        captureButtonTexture = PhotoImage(file = 'Textures/captureButtonTexture.png')
         settingsButtonTexture = PhotoImage(file = 'Textures/settingsButtonTexture.png')
         networkOfflineTexture = PhotoImage(file = 'Textures/networkOffline.png')
         networkOnlineTexture = PhotoImage(file = 'Textures/networkOnline.png')
@@ -173,7 +192,7 @@ class MainMenu(tk.Frame):
                                background = 'white', 
                                width = 200, height = 200, 
                                relief = 'flat', 
-                               command=lambda: controller.raisePage(CapturePage))
+                               command=lambda: controller.raisePage(LogsPage))
         
         logsButton.image = logsButtonTexture
         logsButton.grid(row = 2, column = 2, padx = 10, pady = 10)
@@ -207,6 +226,19 @@ class MainMenu(tk.Frame):
         benchmarkLabel = tk.Label(self, text = 'Benchmark Device', font = menuFont, background = 'white')
         benchmarkLabel.grid(row = 3, column = 4, padx = 10)
 
+        captureButton = tk.Button(self, image = captureButtonTexture, 
+                                   highlightthickness = 0, 
+                                   background = 'white', 
+                                   width = 200, height = 200, 
+                                   relief = 'flat', 
+                                   command=lambda: controller.raisePage(CapturePage))
+        
+        captureButton.image = captureButtonTexture
+        captureButton.grid(row = 2, column = 5, padx = 10, pady = 10)
+
+        captureLabel = tk.Label(self, text = 'Capture', font = menuFont, background = 'white')
+        captureLabel.grid(row = 3, column = 5, padx = 10)
+
         settingsButton = tk.Button(self, image = settingsButtonTexture, 
                                    highlightthickness = 0, 
                                    background = 'white', 
@@ -215,18 +247,21 @@ class MainMenu(tk.Frame):
                                    command=lambda: controller.raisePage(SettingsPage))
         
         settingsButton.image = settingsButtonTexture
-        settingsButton.grid(row = 2, column = 5, padx = 10, pady = 10)
+        settingsButton.grid(row = 2, column = 6, padx = 10, pady = 10)
 
         settingsLabel = tk.Label(self, text = 'Settings', font = menuFont, background = 'white')
-        settingsLabel.grid(row = 3, column = 5, padx = 10)
+        settingsLabel.grid(row = 3, column = 6, padx = 10)
 
         self.refreshNetwork()
 
     def checkConnection(self):
+        global networkEnabled
         try:
             request.urlopen('https://8.8.8.8', timeout = 1) # Maps to google DNS lookup.
+            networkEnabled = True
             return True
         except request.URLError as err:
+            networkEnabled = False
             return False
 
     def refreshNetwork(self):
@@ -240,12 +275,99 @@ class MainMenu(tk.Frame):
             self.networkOfflineLabel.grid(row = 1, column = 1)
             self.networkTextLabel.config(text = 'Network Disabled')
 
-
 class CapturePage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
 
         CapturePage.configure(self, background = 'white')
+
+        textFont = tkinter.font.Font(family = 'Adawaita Sans', size = 12, weight = 'normal')
+        homeButtonTexture = PhotoImage(file = 'Textures/homeButtonTexture.png')
+        startCaptureTexture = PhotoImage(file = 'Textures/startCapture.png')
+        stopCaptureTexture = PhotoImage(file = 'Textures/stopCapture.png')
+
+        homeButton = tk.Button(self, image = homeButtonTexture, 
+                               width = 50, height = 50, 
+                               background = 'white',
+                               relief = 'flat',
+                               highlightthickness = 0,
+                               command = lambda: controller.raisePage(MainMenu))
+        homeButton.image = homeButtonTexture
+        homeButton.grid(row = 1, column = 1)
+
+        self.directoryLabel = tk.Label(self, text = 'Save Directory: None', font = textFont, background = 'white')
+        self.directoryLabel.grid(row = 1, column = 2)
+
+        selectDirButton = tk.Button(self, text = 'Select Directory',
+                                     font = textFont, 
+                                     background = 'white', 
+                                     relief = 'raised',
+                                     command = self.selectDirectory)
+        selectDirButton.grid(row = 2, column = 2)
+
+        startCaptureButton = tk.Button(self, image = startCaptureTexture,
+                                     width = 100, height = 100,
+                                     background = 'white',
+                                     relief = 'flat',
+                                     highlightthickness = 0,
+                                     command = self.startCapture())
+        startCaptureButton.image = startCaptureTexture
+        startCaptureButton.grid(row = 3, column = 3)
+
+        stopCaptureButton = tk.Button(self, image = stopCaptureTexture,
+                                     width = 100, height = 100,
+                                     background = 'white',
+                                     relief = 'flat',
+                                     highlightthickness = 0)
+        stopCaptureButton.image = stopCaptureTexture
+        stopCaptureButton.grid(row = 3, column = 4)
+
+    def selectDirectory(self):
+        global directory
+        directory = filedialog.askdirectory()
+        
+        splitDirectory = directory.split('/')
+        splitDirectory = splitDirectory[-2:]
+        rebuild = '/' + str(splitDirectory[0]) + '/' + str(splitDirectory[1])
+
+        self.directoryLabel.config(text = 'Save Directory:' + rebuild)
+
+    def startCapture(self):
+        
+        if networkEnabled == False:
+            print('[!] Requires internet to work.')
+        else:
+            'Example of possible packet loop.'
+
+            while True:
+                try:
+                    # Insert threading here.
+
+                    DA.sniffPacket()
+                    DA.writePCAP()
+                    DA.loopIterated()
+
+                    # Insert code to update tkinter display...
+
+                except KeyboardInterrupt:
+                    print('Stopping dataAggregation...')
+                    break
+                except PermissionError:
+                    print('Please run the program using sudo and python -E flag.')
+                    break
+                except:
+                    print('Error has occurred')
+                    break
+
+
+    def stopCapture(self):
+        pass
+
+class LogsPage(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+
+        LogsPage.configure(self, background = 'white')
 
         homeButtonTexture = PhotoImage(file = 'Textures/homeButtonTexture.png')
 
@@ -258,21 +380,56 @@ class CapturePage(tk.Frame):
         homeButton.image = homeButtonTexture
         homeButton.grid(row = 1, column = 1)
 
-class LogsPage(tk.Frame):
-    def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent)
-
 class AlertsPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
+
+        AlertsPage.configure(self, background = 'white')
+
+        homeButtonTexture = PhotoImage(file = 'Textures/homeButtonTexture.png')
+
+        homeButton = tk.Button(self, image = homeButtonTexture, 
+                               width = 50, height = 50, 
+                               background = 'white',
+                               relief = 'flat',
+                               highlightthickness = 0,
+                               command = lambda: controller.raisePage(MainMenu))
+        homeButton.image = homeButtonTexture
+        homeButton.grid(row = 1, column = 1)
 
 class BenchmarkPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
 
+        BenchmarkPage.configure(self, background = 'white')
+
+        homeButtonTexture = PhotoImage(file = 'Textures/homeButtonTexture.png')
+
+        homeButton = tk.Button(self, image = homeButtonTexture, 
+                               width = 50, height = 50, 
+                               background = 'white',
+                               relief = 'flat',
+                               highlightthickness = 0,
+                               command = lambda: controller.raisePage(MainMenu))
+        homeButton.image = homeButtonTexture
+        homeButton.grid(row = 1, column = 1)
+
 class SettingsPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
+
+        SettingsPage.configure(self, background = 'white')
+
+        homeButtonTexture = PhotoImage(file = 'Textures/homeButtonTexture.png')
+
+        homeButton = tk.Button(self, image = homeButtonTexture, 
+                               width = 50, height = 50, 
+                               background = 'white',
+                               relief = 'flat',
+                               highlightthickness = 0,
+                               command = lambda: controller.raisePage(MainMenu))
+        homeButton.image = homeButtonTexture
+        homeButton.grid(row = 1, column = 1)
 
 if __name__ == '__main__':
     if moduleError == True:
@@ -291,24 +448,4 @@ if __name__ == '__main__':
     'Using OS.system to run terminal command to analyze file.'
     #os.system("python packetAnalysis.py --pcap-file /run/media/matthew/'USB DRIVE'/'~ VCE - Software Development/Folio/DEVELOPMENT'/version_0.0.11/logsPCAP/2.pcap")
 
-    'Example of possible packet loop.'
 
-    # while True:
-    #     try:
-    #         # Insert threading here.
-
-    #         DA.sniffPacket()
-    #         DA.writePCAP()
-    #         DA.loopIterated()
-
-    #         # Insert code to update tkinter display...
-
-    #     except KeyboardInterrupt:
-    #         print('Stopping dataAggregation...')
-    #         break
-    #     except PermissionError:
-    #         print('Please run the program using sudo and python -E flag.')
-    #         break
-    #     except:
-    #         print('Error has occurred')
-    #         break
