@@ -9,8 +9,8 @@ I then print All modules imported correctly. To alert the user that no problems 
 
 If a module is ever throwing an error when importing, the module was not installed on the device.
 We then check every module that was supposed to be imported. Using a for loop as it is the easiest way to iterate across a array.
-If the module is the intrusion_detection_system module...
-We alert the user that the UPDATE HERE file is missing required dependencies, or alternatively requires root/sudo permission (if on linux).
+If the module is the dataAggregation.py...
+We alert the user that the dataAggregation file is missing required dependencies, or alternatively requires root/sudo permission (if on linux).
 We then make 'moduleError' equal to True. So the program will not start.
 If the module is not installed...
 We alert the user that the module is not installed on the device.
@@ -48,6 +48,12 @@ except:
         elif module not in successfulModules:
             print('[!] Module "' + module + '" is not installed on the device.')
             moduleError = True
+
+"""
+DETERMINE SYSTEM REQUIREMENTS DOCUMENTATION
+
+I decided to 
+"""
 
 class DetermineSystemRequirements:
 
@@ -98,7 +104,7 @@ class PageManager(tk.Tk):
 
         self.pages = {}
 
-        for p in (MainMenu, LogsPage, AlertsPage, BenchmarkPage, SettingsPage):
+        for p in (MainMenu, LogsPage, AlertsPage, BenchmarkPage, CapturePage, SettingsPage):
             page = p(container, self)
 
             self.pages[p] = page
@@ -119,7 +125,6 @@ class MainMenu(tk.Frame):
 
         MainMenu.configure(self, background = 'white')
 
-        #tempIcon = PhotoImage(file = 'Textures/placeholder.png')
         logsButtonTexture = PhotoImage(file = 'Textures/logsButtonTexture.png')
         alertsButtonTexture = PhotoImage(file = 'Textures/alertsButtonTexture.png')
         benchmarkButtonTexture = PhotoImage(file = 'Textures/benchmarkButtonTexture.png')
@@ -186,6 +191,18 @@ class MainMenu(tk.Frame):
         benchmarkLabel = tk.Label(self, text = 'Benchmark Device', font = menuFont, background = 'white')
         benchmarkLabel.grid(row = 3, column = 4, padx = 10)
 
+        captureButton = tk.Button(self, image = captureButtonTexture, 
+                                   highlightthickness = 0, 
+                                   background = 'white', 
+                                   width = 200, height = 200, 
+                                   relief = 'flat', 
+                                   command=lambda: controller.raisePage(CapturePage))
+        
+        captureButton.image = captureButtonTexture
+        captureButton.grid(row = 2, column = 5, padx = 10, pady = 10)
+
+        captureLabel = tk.Label(self, text = 'Capture', font = menuFont, background = 'white')
+        captureLabel.grid(row = 3, column = 5, padx = 10)
 
         settingsButton = tk.Button(self, image = settingsButtonTexture, 
                                    highlightthickness = 0, 
@@ -195,10 +212,10 @@ class MainMenu(tk.Frame):
                                    command=lambda: controller.raisePage(SettingsPage))
         
         settingsButton.image = settingsButtonTexture
-        settingsButton.grid(row = 2, column = 5, padx = 10, pady = 10)
+        settingsButton.grid(row = 2, column = 6, padx = 10, pady = 10)
 
         settingsLabel = tk.Label(self, text = 'Settings', font = menuFont, background = 'white')
-        settingsLabel.grid(row = 3, column = 5, padx = 10)
+        settingsLabel.grid(row = 3, column = 6, padx = 10)
 
         self.refreshNetwork()
 
@@ -213,15 +230,18 @@ class MainMenu(tk.Frame):
             return False
 
     def refreshNetwork(self):
-        self.networkOfflineLabel.grid_forget()
-        self.networkOnlineLabel.grid_forget()
+        try:
+            self.networkOfflineLabel.grid_forget()
+            self.networkOnlineLabel.grid_forget()
 
-        if self.checkConnection() == True:
-            self.networkOnlineLabel.grid(row = 1, column = 1)
-            self.networkTextLabel.config(text = 'Network Enabled')
-        else:
-            self.networkOfflineLabel.grid(row = 1, column = 1)
-            self.networkTextLabel.config(text = 'Network Disabled')
+            if self.checkConnection() == True:
+                self.networkOnlineLabel.grid(row = 1, column = 1)
+                self.networkTextLabel.config(text = 'Network Enabled')
+            else:
+                self.networkOfflineLabel.grid(row = 1, column = 1)
+                self.networkTextLabel.config(text = 'Network Disabled')
+        except:
+            pass
 
 class LogsPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -282,33 +302,39 @@ class LogsPage(tk.Frame):
         searchButton.grid(row = 1, column = 5)
 
     def selectPCAP(self):
-        global filePath
-        filePath = filedialog.askopenfilename(title = 'Select PCAP file', filetypes = [('PCAP File', '*.pcap')])
+        try:
+            global filePath
+            filePath = filedialog.askopenfilename(title = 'Select PCAP file', filetypes = [('PCAP File', '*.pcap')])
+        except:
+            pass
     
     def readPCAP(self):
-        if (filePath.split('/')[-1])[1:] == '.pcap':
-            command = str('python packetAnalysis.py --pcap-file ' + filePath)
-            try:
-                os.system(command)
+        try:
+            if (filePath.split('/')[-1])[1:] == '.pcap':
+                command = str('python packetAnalysis.py --pcap-file ' + filePath)
+                try:
+                    os.system(command)
 
-                global result
-                result = os.popen(command).read()
-                result = result.split('py-sn1tchRequireKeyword')
-                result = eval(result[-1])
-                
-                global indexedValues
-                indexedValues = {}
+                    global result
+                    result = os.popen(command).read()
+                    result = result.split('py-sn1tchRequireKeyword')
+                    result = eval(result[-1])
+                    
+                    global indexedValues
+                    indexedValues = {}
 
-                for packet in result.keys():
-                    insert = self.packetTree.insert('', tk.END, text = str(packet[0]), values = (packet[2], result[packet]['protocol_name'], result[packet]['flagged_anomalies'], str(int(result[packet]['last_seen']) - int(result[packet]['start_time']))))
-                    indexedValues[insert] = packet
-                self.packetTree.bind('<Double-1>', self.onDoubleClick)
+                    for packet in result.keys():
+                        insert = self.packetTree.insert('', tk.END, text = str(packet[0]), values = (packet[2], result[packet]['protocol_name'], result[packet]['flagged_anomalies'], str(int(result[packet]['last_seen']) - int(result[packet]['start_time']))))
+                        indexedValues[insert] = packet
+                    self.packetTree.bind('<Double-1>', self.onDoubleClick)
 
-            except:
-                print('[!] Ensure all your folder names in the directory has no spaces.')
+                except:
+                    print('[!] Ensure all your folder names in the directory has no spaces.')
 
-        else:
-            print('[!] Ensure you have selected a PCAP file with the extension .pcap')
+            else:
+                print('[!] Ensure you have selected a PCAP file with the extension .pcap')
+        except:
+            pass
     
     def onDoubleClick(self, event):
         try:
@@ -358,36 +384,22 @@ class LogsPage(tk.Frame):
             pass
     
     def searchTreeview(self, query):
-        items = self.packetTree.get_children()
-        for item in items:
-            if query.lower() in str(self.packetTree.item(item)['values']).lower():
-                self.packetTree.selection_set(item)
-                self.packetTree.focus(item)
-                return
-        messagebox.showinfo('Search', f'No results found for "{query}".')
+        try:
+            items = self.packetTree.get_children()
+            for item in items:
+                if query.lower() in str(self.packetTree.item(item)['values']).lower():
+                    self.packetTree.selection_set(item)
+                    self.packetTree.focus(item)
+                    return
+            messagebox.showinfo('Search', f'No results found for "{query}".')
+        except:
+            pass
 
 
 class AlertsPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
 
-        #global examplePackets
-        examplePackets = {('142.250.76.110', 443, '10.169.68.81', 36136, 6): {'start_time': 1753929493.726965, 'last_seen': 1753929522.06515, 'packets': 11, 'bytes': 2366, 'protocol_name': 'TCP', 'flagged_anomalies': {'UnusualPortUsage'}, 'src_ip': '142.250.76.110', 'sport': 443, 'dst_ip': '10.169.68.81', 'dport': 36136}, 
-                          ('10.169.68.81', 36136, '142.250.76.110', 443, 6): {'start_time': 1753929493.727017, 'last_seen': 1753929522.10532, 'packets': 10, 'bytes': 4929, 'protocol_name': 'TCP', 'flagged_anomalies': {'UnusualPortUsage'}, 'src_ip': '10.169.68.81', 'sport': 36136, 'dst_ip': '142.250.76.110', 'dport': 443}, 
-                          ('10.169.68.80', 53946, '10.169.68.173', 53, 17): {'start_time': 1753929494.73816, 'last_seen': 1753929494.73816, 'packets': 1, 'bytes': 75, 'protocol_name': 'UDP', 'flagged_anomalies': {'UnusualPortUsage'}, 'src_ip': '10.169.68.80', 'sport': 53946, 'dst_ip': '10.169.68.173', 'dport': 53}, 
-                          ('10.169.68.80', 50020, '10.169.68.173', 53, 17): {'start_time': 1753929494.73865, 'last_seen': 1753929494.73865, 'packets': 1, 'bytes': 75, 'protocol_name': 'UDP', 'flagged_anomalies': {'UnusualPortUsage'}, 'src_ip': '10.169.68.80', 'sport': 50020, 'dst_ip': '10.169.68.173', 'dport': 53}, 
-                          ('10.169.68.80', 45420, '10.169.68.173', 53, 17): {'start_time': 1753929494.738712, 'last_seen': 1753929494.738712, 'packets': 1, 'bytes': 75, 'protocol_name': 'UDP', 'flagged_anomalies': {'UnusualPortUsage'}, 'src_ip': '10.169.68.80', 'sport': 45420, 'dst_ip': '10.169.68.173', 'dport': 53}, 
-                          ('10.169.68.80', 49958, '10.169.68.173', 53, 17): {'start_time': 1753929494.738788, 'last_seen': 1753929494.738788, 'packets': 1, 'bytes': 75, 'protocol_name': 'UDP', 'flagged_anomalies': {'UnusualPortUsage'}, 'src_ip': '10.169.68.80', 'sport': 49958, 'dst_ip': '10.169.68.173', 'dport': 53}, 
-                          ('10.169.68.80', 35674, '10.169.68.173', 53, 17): {'start_time': 1753929494.738832, 'last_seen': 1753929494.738832, 'packets': 1, 'bytes': 75, 'protocol_name': 'UDP', 'flagged_anomalies': {'UnusualPortUsage'}, 'src_ip': '10.169.68.80', 'sport': 35674, 'dst_ip': '10.169.68.173', 'dport': 53}, 
-                          ('10.169.68.173', 53, '10.169.68.80', 50020, 17): {'start_time': 1753929494.851957, 'last_seen': 1753929494.851957, 'packets': 1, 'bytes': 91, 'protocol_name': 'UDP', 'flagged_anomalies': {'UnusualPortUsage'}, 'src_ip': '10.169.68.173', 'sport': 53, 'dst_ip': '10.169.68.80', 'dport': 50020}, 
-                          ('10.169.68.173', 53, '10.169.68.80', 45420, 17): {'start_time': 1753929494.851958, 'last_seen': 1753929494.851958, 'packets': 1, 'bytes': 103, 'protocol_name': 'UDP', 'flagged_anomalies': {'UnusualPortUsage'}, 'src_ip': '10.169.68.173', 'sport': 53, 'dst_ip': '10.169.68.80', 'dport': 45420}, 
-                          ('10.169.68.173', 53, '10.169.68.80', 49958, 17): {'start_time': 1753929494.855455, 'last_seen': 1753929494.855455, 'packets': 1, 'bytes': 103, 'protocol_name': 'UDP', 'flagged_anomalies': {'UnusualPortUsage'}, 'src_ip': '10.169.68.173', 'sport': 53, 'dst_ip': '10.169.68.80', 'dport': 49958}, 
-                          ('10.169.68.173', 53, '10.169.68.80', 35674, 17): {'start_time': 1753929494.855456, 'last_seen': 1753929494.855456, 'packets': 1, 'bytes': 91, 'protocol_name': 'UDP', 'flagged_anomalies': {'UnusualPortUsage'}, 'src_ip': '10.169.68.173', 'sport': 53, 'dst_ip': '10.169.68.80', 'dport': 35674}, 
-                          ('10.169.68.173', 53, '10.169.68.80', 53946, 17): {'start_time': 1753929495.014657, 'last_seen': 1753929495.014657, 'packets': 1, 'bytes': 125, 'protocol_name': 'UDP', 'flagged_anomalies': {'UnusualPortUsage'}, 'src_ip': '10.169.68.173', 'sport': 53, 'dst_ip': '10.169.68.80', 'dport': 53946}, 
-                          ('10.169.68.80', 43962, '35.244.181.201', 443, 6): {'start_time': 1753929496.452064, 'last_seen': 1753929496.636641, 'packets': 4, 'bytes': 372, 'protocol_name': 'TCP', 'flagged_anomalies': {'UnusualPortUsage'}, 'src_ip': '10.169.68.80', 'sport': 43962, 'dst_ip': '35.244.181.201', 'dport': 443}, 
-                          ('35.244.181.201', 443, '10.169.68.80', 43962, 6): {'start_time': 1753929496.636354, 'last_seen': 1753929496.636607, 'packets': 2, 'bytes': 132, 'protocol_name': 'TCP', 'flagged_anomalies': {'UnusualPortUsage'}, 'src_ip': '35.244.181.201', 'sport': 443, 'dst_ip': '10.169.68.80', 'dport': 43962}, 
-                          ('10.169.68.80', 47408, '34.160.144.191', 443, 6): {'start_time': 1753929497.468919, 'last_seen': 1753929497.647393, 'packets': 4, 'bytes': 372, 'protocol_name': 'TCP', 'flagged_anomalies': {'UnusualPortUsage'}, 'src_ip': '10.169.68.80', 'sport': 47408, 'dst_ip': '34.160.144.191', 'dport': 443}}
-        
         AlertsPage.configure(self, background = 'white')
 
         homeButtonTexture = PhotoImage(file = 'Textures/homeButtonTexture.png')
@@ -443,33 +455,39 @@ class AlertsPage(tk.Frame):
         searchButton.grid(row = 1, column = 5)
 
     def selectPCAP(self):
-        global filePath
-        filePath = filedialog.askopenfilename(title = 'Select PCAP file', filetypes = [('PCAP File', '*.pcap')])
+        try:
+            global filePath
+            filePath = filedialog.askopenfilename(title = 'Select PCAP file', filetypes = [('PCAP File', '*.pcap')])
+        except:
+            pass
     
     def analyzePCAP(self):
-        if (filePath.split('/')[-1])[1:] == '.pcap':
-            command = str('python packetAnalysis.py --pcap-file ' + filePath)
-            try:
-                os.system(command)
+        try:
+            if (filePath.split('/')[-1])[1:] == '.pcap':
+                command = str('python packetAnalysis.py --pcap-file ' + filePath)
+                try:
+                    os.system(command)
 
-                global result
-                result = os.popen(command).read()
-                result = result.split('py-sn1tchRequireKeyword')
-                result = eval(result[-1])
-                
-                global indexedValues
-                indexedValues = {}
+                    global result
+                    result = os.popen(command).read()
+                    result = result.split('py-sn1tchRequireKeyword')
+                    result = eval(result[-1])
+                    
+                    global indexedValues
+                    indexedValues = {}
 
-                for packet in result.keys():
-                    insert = self.packetTree.insert('', tk.END, text = str(packet[0]), values = (packet[2], result[packet]['protocol_name'], result[packet]['flagged_anomalies'], str(int(result[packet]['last_seen']) - int(result[packet]['start_time']))))
-                    indexedValues[insert] = packet
-                self.packetTree.bind('<Double-1>', self.onDoubleClick)
+                    for packet in result.keys():
+                        insert = self.packetTree.insert('', tk.END, text = str(packet[0]), values = (packet[2], result[packet]['protocol_name'], result[packet]['flagged_anomalies'], str(int(result[packet]['last_seen']) - int(result[packet]['start_time']))))
+                        indexedValues[insert] = packet
+                    self.packetTree.bind('<Double-1>', self.onDoubleClick)
 
-            except:
-                print('[!] Ensure all your folder names in the directory has no spaces.')
+                except:
+                    print('[!] Ensure all your folder names in the directory has no spaces.')
 
-        else:
-            print('[!] Ensure you have selected a PCAP file with the extension .pcap')
+            else:
+                print('[!] Ensure you have selected a PCAP file with the extension .pcap')
+        except:
+            pass
     
     def onDoubleClick(self, event):
         try:
@@ -519,13 +537,16 @@ class AlertsPage(tk.Frame):
             pass
     
     def searchTreeview(self, query):
-        items = self.packetTree.get_children()
-        for item in items:
-            if query.lower() in str(self.packetTree.item(item)['values']).lower():
-                self.packetTree.selection_set(item)
-                self.packetTree.focus(item)
-                return
-        messagebox.showinfo('Search', f'No results found for "{query}".')
+        try:
+            items = self.packetTree.get_children()
+            for item in items:
+                if query.lower() in str(self.packetTree.item(item)['values']).lower():
+                    self.packetTree.selection_set(item)
+                    self.packetTree.focus(item)
+                    return
+            messagebox.showinfo('Search', f'No results found for "{query}".')
+        except:
+            pass
 
 class BenchmarkPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -544,6 +565,69 @@ class BenchmarkPage(tk.Frame):
         homeButton.image = homeButtonTexture
         homeButton.grid(row = 1, column = 1)
 
+        proofOfConceptLabel = tk.Label(self, text = 'This is to remain without function. This is just a proof of concept.', background = 'white')
+        proofOfConceptLabel.grid(row = 5, column = 5)
+
+class CapturePage(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+
+        CapturePage.configure(self, background = 'white')
+
+        textFont = tkinter.font.Font(family = 'Adawaita Sans', size = 12, weight = 'normal')
+        homeButtonTexture = PhotoImage(file = 'Textures/homeButtonTexture.png')
+        startCaptureTexture = PhotoImage(file = 'Textures/startCapture.png')
+        stopCaptureTexture = PhotoImage(file = 'Textures/stopCapture.png')
+
+        homeButton = tk.Button(self, image = homeButtonTexture, 
+                               width = 50, height = 50, 
+                               background = 'white',
+                               relief = 'flat',
+                               highlightthickness = 0,
+                               command = lambda: controller.raisePage(MainMenu))
+        homeButton.image = homeButtonTexture
+        homeButton.grid(row = 1, column = 1)
+
+        self.directoryLabel = tk.Label(self, text = 'Save Directory: None', font = textFont, background = 'white')
+        self.directoryLabel.grid(row = 1, column = 2)
+
+        selectDirButton = tk.Button(self, text = 'Select Directory',
+                                     font = textFont, 
+                                     background = 'white', 
+                                     relief = 'raised',
+                                     command = self.selectDirectory)
+        selectDirButton.grid(row = 2, column = 2)
+
+        startCaptureButton = tk.Button(self, image = startCaptureTexture,
+                                     width = 100, height = 100,
+                                     background = 'white',
+                                     relief = 'flat',
+                                     highlightthickness = 0)
+        startCaptureButton.image = startCaptureTexture
+        startCaptureButton.grid(row = 3, column = 3)
+
+        stopCaptureButton = tk.Button(self, image = stopCaptureTexture,
+                                     width = 100, height = 100,
+                                     background = 'white',
+                                     relief = 'flat',
+                                     highlightthickness = 0)
+        stopCaptureButton.image = stopCaptureTexture
+        stopCaptureButton.grid(row = 3, column = 4)
+
+        proofOfConceptLabel = tk.Label(self, text = 'This is to remain without function. Please use the dataAggregation.py file to capture packets.', background = 'white')
+        proofOfConceptLabel.grid(row = 5, column = 5)
+
+    def selectDirectory(self):
+        global directory
+        directory = filedialog.askdirectory()
+        
+        splitDirectory = directory.split('/')
+        splitDirectory = splitDirectory[-2:]
+        rebuild = '/' + str(splitDirectory[0]) + '/' + str(splitDirectory[1])
+
+        self.directoryLabel.config(text = 'Save Directory:' + rebuild)
+
+
 class SettingsPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
@@ -561,6 +645,9 @@ class SettingsPage(tk.Frame):
         homeButton.image = homeButtonTexture
         homeButton.grid(row = 1, column = 1)
 
+        noticeLabel = tk.Label(self, background = 'white', text = 'It is ILLEGAL to collect and analyze packets on a network without the owners consent.')
+        noticeLabel.grid(row = 2, column = 2)
+
 if __name__ == '__main__':
     if moduleError == True:
         print('[!] Exiting program...')
@@ -573,16 +660,3 @@ if __name__ == '__main__':
     'Start Front End'
     main = PageManager()
     main.mainloop()
-
-"""     'Using OS.system to run terminal command to analyze file.'
-    command = "python packetAnalysis.py --pcap-file /run/media/matthew/'USB DRIVE'/'~ VCE - Software Development'/Folio/DEVELOPMENT/version_0.0.15/logsPCAP/4.pcap"
-    os.system(command)
-    result = os.popen(command).read()
-    result = result.split('py-sn1tchRequireKeyword')
-    print(result[-1])
-
-    result = eval(result[-1])
-    print()
-    print()
-    print()
-    print(result[('142.250.76.110', 443, '10.169.68.81', 36136, 6)]) """
