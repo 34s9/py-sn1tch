@@ -286,9 +286,10 @@ class PcapAnalyzer:
                  self.logger.error(f"Error analyzing packet {self.packet_count} from file: {e} - {pkt.summary() if hasattr(pkt, 'summary') else 'Packet summary unavailable'}")
 
 
+        print('\n' + 'py-sn1tchRequireKeyword' + '\n' + str(self.flows) + '\n') 
         self._analyze_flows_post_file_capture() # Specific for file mode
         self.logger.info(f"Finished processing PCAP file: {pcap_file_path}")
-
+        
 
     def _analyze_flows_post_file_capture(self):
         """Analyzes collected flows after processing a whole PCAP file."""
@@ -375,3 +376,4 @@ if __name__ == "__main__":
         print("Exiting: Scapy core components failed to import. Please check installation.")
     else:
         main()
+        
